@@ -43,6 +43,20 @@ src/test/java/com/example/chain/
 - **DatabaseSaveHandler** persists valid messages to the H2 database.
 - **IntegrationTestE2EListenerToDB** verifies the full flow: produce → consume → process → persist.
 
+## How MessageListener Consumes Messages in Tests
+
+When you run the `testListenerToDbE2EFlow` method inside the `IntegrationTestE2EListenerToDB` class, the following happens:
+
+- The test sends a `Message` object to the Kafka topic `messages` using a `KafkaTemplate`.
+- Spring Boot's test context starts the application with an embedded Kafka broker and all beans, including `MessageListener`.
+- The `MessageListener` class is annotated with `@Component` and has a method annotated with `@KafkaListener(topics = "messages", groupId = "message-group")`.
+- As soon as a message is produced to the `messages` topic, the embedded Kafka broker delivers it to the consumer group.
+- The `@KafkaListener` method in `MessageListener` automatically receives the message, and Spring deserializes it into a `Message` object.
+- The received message is then passed to the handler chain for validation and persistence.
+
+**In summary:**
+> The test triggers the full application context, so the real Kafka consumer (`MessageListener`) is active and automatically consumes any messages sent to the topic during the test, just like it would in production.
+
 ## Running the Application
 1. **JDK 21 required** (see your `README.md` or system setup)
 2. Start the application:
