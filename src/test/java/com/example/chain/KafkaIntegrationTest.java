@@ -55,7 +55,7 @@ class KafkaIntegrationTest {
         // Step 2: Consume message from Kafka
         final Properties consumerProps = getKafkaConfigsProps();
 
-        // Use REAEDME.MD -> ConsumerRecords - key and value to know more about
+        /* @see https://github.com/Vivid-Vortex/IntegrationTestDemo/blob/master/src/test/java/com/example/chain/README.md#consumerrecords---key-and-valu */
         final ConsumerRecords<String, String> records = consumerMessages(consumerProps);
         assertFalse(records.isEmpty(), "No messages were consumed");
 
