@@ -36,8 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 // Use Below kafkaProperties Method instead of @TestPropertySource annotation as used in ITIngestAndReadFromEmbededKafka
 class IntegrationTestE2EListenerToDB {
     private static final Logger logger = LoggerFactory.getLogger(IntegrationTestE2EListenerToDB.class);
-    public static final String SRC_TEST_RESOURCES_MESSAGE_JSON = "src/test/resources/message.json";
-    public static final String SRC_TEST_RESOURCES_HEADERS_JSON = "src/test/resources/headers.json";
+
+    public static final String SRC_TEST_RESOURCES_MESSAGE_JSON = "src/test/resources/payloads/message.json";
+    public static final String SRC_TEST_RESOURCES_HEADERS_JSON = "src/test/resources/headers/headers.json";
+
     @Autowired
     private KafkaTemplate<String, Message> kafkaTemplate;
 
