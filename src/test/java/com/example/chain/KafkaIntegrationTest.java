@@ -35,73 +35,16 @@ import static org.junit.jupiter.api.Assertions.*;
     "spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer",
     "spring.kafka.consumer.value-deserializer=org.apache.kafka.common.serialization.StringDeserializer"
 })
-public class KafkaIntegrationTest {
+class KafkaIntegrationTest {
     private static final Logger logger = LoggerFactory.getLogger(KafkaIntegrationTest.class);
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-//    @Test
-//    public void testKafkaMessageFlow() throws Exception {
-//        // Step 1: Send message to Kafka
-//        String testMessage = "Hello, Kafka!";
-//        logger.info("Sending message: {}", testMessage);
-//
-//        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send("test-topic", testMessage);
-//        SendResult<String, String> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
-//        logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
-//
-//        // Give some time for the message to be processed
-//        Thread.sleep(1000);
-//
-//        // Step 2: Read message from Kafka
-//        logger.info("Attempting to receive message...");
-//        var consumerRecord = kafkaTemplate.receive("test-topic", 0, 0, Duration.ofSeconds(10));
-//        assertNotNull(consumerRecord, "Should receive a message");
-//
-//        String receivedMessage = consumerRecord.value();
-//        logger.info("Received message: {}", receivedMessage);
-//
-//        // Step 3: Assert the result
-//        assertEquals(testMessage, receivedMessage, "The received message should match the sent message");
-//    }
-
-//    @Test
-//    public void testKafkaMessageFlow() throws Exception {
-//        // Step 1: Send message to Kafka
-//        String testMessage = "Hello, Kafka!";
-//        logger.info("Sending message: {}", testMessage);
-//
-//        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send("test-topic", testMessage);
-//        SendResult<String, String> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
-//        logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
-//
-//        // Step 2: Consume message from Kafka
-//        logger.info("Attempting to consume message...");
-//        Properties consumerProps = new Properties();
-//        consumerProps.put("bootstrap.servers", "localhost:9092");
-//        consumerProps.put("group.id", "test-group");
-//        consumerProps.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-//        consumerProps.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-//        consumerProps.put("auto.offset.reset", "earliest");
-//
-//        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
-//            consumer.subscribe(List.of("test-topic"));
-//            ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(10));
-//            assertFalse(records.isEmpty(), "No messages were consumed");
-//
-//            String receivedMessage = records.iterator().next().value();
-//            logger.info("Received message: {}", receivedMessage);
-//
-//            // Step 3: Assert the result
-//            assertEquals(testMessage, receivedMessage, "The received message should match the sent message");
-//        }
-//    }
-
     private KafkaConsumer<String, String> consumer;
 
     @Test
-    public void testKafkaMessageFlow() throws Exception {
+    void testKafkaMessageFlow() throws Exception {
         // Step 1: Send message to Kafka
         String testMessage = "Hello, Kafka!";
         logger.info("Sending message: {}", testMessage);
@@ -152,9 +95,4 @@ public class KafkaIntegrationTest {
             logger.info("KafkaConsumer closed successfully.");
         }
     }
-
-//    @AfterEach
-//    public void tearDown() throws InterruptedException {
-//        Thread.sleep(1000); // Allow time for Kafka to release file locks
-//    }
 } 
