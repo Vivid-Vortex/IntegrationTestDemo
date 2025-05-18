@@ -57,6 +57,26 @@ When you run the `testListenerToDbE2EFlow` method inside the `IntegrationTestE2E
 **In summary:**
 > The test triggers the full application context, so the real Kafka consumer (`MessageListener`) is active and automatically consumes any messages sent to the topic during the test, just like it would in production.
 
+## Chain of Responsibility Pattern in This Project
+
+This project uses the **Chain of Responsibility** design pattern to process messages in a modular and extensible way:
+
+- The `Handler` interface defines two methods: `setNext(Handler handler)` and `handle(Message message)`.
+- `AbstractHandler` provides a base implementation, allowing handlers to be linked together.
+- `ValidationHandler` checks if the message content is valid. If valid, it passes the message to the next handler.
+- `DatabaseSaveHandler` saves valid messages to the database. It can also pass the message further if more handlers are added.
+- The chain is configured in `HandlerConfig`, where `ValidationHandler` is set to forward to `DatabaseSaveHandler`.
+
+**How it works in the flow:**
+- When a message is received (e.g., by `MessageListener`), it is passed to the start of the chain (`ValidationHandler`).
+- Each handler performs its logic and, if appropriate, calls `super.handle(message)` to pass the message to the next handler.
+- This allows you to add, remove, or reorder processing steps easily by changing the chain configuration.
+
+**Benefits:**
+- Decouples processing steps
+- Makes the flow modular and testable
+- Easy to extend with new handlers for additional processing steps
+
 ## Running the Application
 1. **JDK 21 required** (see your `README.md` or system setup)
 2. Start the application:
