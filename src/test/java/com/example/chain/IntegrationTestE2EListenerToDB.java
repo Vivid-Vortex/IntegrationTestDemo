@@ -3,6 +3,9 @@ package com.example.chain;
 import com.example.chain.model.Message;
 import com.example.chain.repository.MessageRepository;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -15,6 +18,7 @@ import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 
@@ -64,8 +68,23 @@ class IntegrationTestE2EListenerToDB {
         Message testMessage = preparePayloadBody(testMessageContent);
         logger.info("Sending message: {}", testMessageContent);
 
+        // Step 3: Add headers
+        Header header1 = new RecordHeader("header-key-1", "header-value-1".getBytes());
+        Header header2 = new RecordHeader("header-key-2", "header-value-2".getBytes());
+
+        // Step 4: Create a ProducerRecord with headers
+//        ProducerRecord<String, Message> record = new ProducerRecord<>(getKafkaConfigsProps().getProperty("embedded.kafka.topics"), Integer.valueOf(getKafkaConfigsProps().getProperty("embedded.kafka.partitions")), null, null, testMessage, List.of(header1, header2));
+
+        List<Header> headers = List.of(
+                new RecordHeader("header-key-1", "header-value-1".getBytes()),
+                new RecordHeader("header-key-2", "header-value-2".getBytes())
+        );
+
+        ProducerRecord<String, Message> record = buildProducerRecord(testMessage, headers);
+
         // Step 1: Send message to Kafka
-        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send("messages", testMessage);
+//        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send("messages", testMessage);
+        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(record);
         SendResult<String, Message> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
         logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
 
@@ -76,6 +95,14 @@ class IntegrationTestE2EListenerToDB {
         Message savedMessage = messageRepository.findByContent(testMessageContent);
         assertNotNull(savedMessage, "Message should be saved in the database");
         assertEquals(testMessageContent, savedMessage.getContent(), "The saved message content should match the sent message");
+    }
+
+    private ProducerRecord<String, Message> buildProducerRecord(Message message, List<Header> headers) {
+        Properties kafkaProps = getKafkaConfigsProps();
+        String topic = kafkaProps.getProperty("embedded.kafka.topics");
+        Integer partition = Integer.valueOf(kafkaProps.getProperty("embedded.kafka.partitions"));
+
+        return new ProducerRecord<>(topic, partition, null, null, message, headers);
     }
 
     private Message preparePayloadBody(String content) {
