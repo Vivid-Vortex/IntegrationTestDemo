@@ -69,33 +69,32 @@ class IntegrationTestE2EListenerToDB {
         Message testMessage = preparePayloadBody(testMessageContent);
         logger.info("Sending message: {}", testMessageContent);
 
-        // Step 3: Add headers
-        Header header1 = new RecordHeader("header-key-1", "header-value-1".getBytes());
-        Header header2 = new RecordHeader("header-key-2", "header-value-2".getBytes());
+        // Step 3: Create headers for the message
+        final List<Header> headers = getHeaders();
 
-        // Step 4: Create a ProducerRecord with headers
-//        ProducerRecord<String, Message> record = new ProducerRecord<>(getKafkaConfigsProps().getProperty("embedded.kafka.topics"), Integer.valueOf(getKafkaConfigsProps().getProperty("embedded.kafka.partitions")), null, null, testMessage, List.of(header1, header2));
+        // Step 4: Create a ProducerRecord with the Payload (Step 2) and Headers (Step 3)
+        ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, headers);
 
-        List<Header> headers = List.of(
-                new RecordHeader("header-key-1", "header-value-1".getBytes()),
-                new RecordHeader("header-key-2", "header-value-2".getBytes())
-        );
-
-        ProducerRecord<String, Message> record = buildProducerRecord(testMessage, headers);
-
-        // Step 1: Send message to Kafka
-//        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send("messages", testMessage);
-        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(record);
+        // Step 5: Send message to Kafka
+        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(messageProducerRecord);
         SendResult<String, Message> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
         logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
 
-        // Step 2: Wait for the message to be consumed and processed
-        Thread.sleep(5000); // Allow some time for the listener to process the message
+        // Step 6: Wait for the message to be consumed and processed. Allow some time for the listener to process the message.
+        // Please note that you must adjust this as you might observe that sometime that sometimes after trying two or three time this tests passs.
+        Thread.sleep(6000);
 
-        // Step 3: Verify the message was inserted into the H2 database
+        // Step 7: Verify the message was inserted into the H2 database
         Message savedMessage = messageRepository.findByContent(testMessageContent);
         assertNotNull(savedMessage, "Message should be saved in the database");
         assertEquals(testMessageContent, savedMessage.getContent(), "The saved message content should match the sent message");
+    }
+
+    private static List<Header> getHeaders() {
+        return List.of(
+                new RecordHeader("header-key-1", "header-value-1".getBytes()),
+                new RecordHeader("header-key-2", "header-value-2".getBytes())
+        );
     }
 
     private ProducerRecord<String, Message> buildProducerRecord(Message message, List<Header> headers) {
