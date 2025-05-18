@@ -52,9 +52,11 @@ class KafkaIntegrationTest {
         logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
 
         // Step 2: Consume message from Kafka
+        logger.info("Getting Kafka Configuration Properties...");
         final Properties consumerProps = getKafkaConfigsProps();
 
         /* @see https://github.com/Vivid-Vortex/IntegrationTestDemo/blob/master/src/test/java/com/example/chain/README.md#consumerrecords---key-and-valu */
+        logger.info("Attempting to consume message...");
         final ConsumerRecords<String, String> records = consumeMessages(consumerProps);
         assertFalse(records.isEmpty(), "No messages were consumed");
 
@@ -77,7 +79,6 @@ class KafkaIntegrationTest {
     }
 
     private static Properties getKafkaConfigsProps() {
-        logger.info("Attempting to consume message...");
         Properties consumerProps = new Properties();
         consumerProps.put("bootstrap.servers", "localhost:9092");
         consumerProps.put("group.id", "test-group");
@@ -89,6 +90,7 @@ class KafkaIntegrationTest {
 
     @AfterEach
     public void tearDown() {
+        logger.info("Attempting to close KafkaConsumer...");
         if (consumer != null) {
             consumer.close();
             logger.info("KafkaConsumer closed successfully.");
