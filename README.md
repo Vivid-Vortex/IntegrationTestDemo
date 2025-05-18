@@ -13,3 +13,6 @@ Test every step before moving onto the next step. Test it until you fix it.
 Please feel free to execute the tests using gradle based commands
 
 Jdk 21: C:\Program Files\Java\jdk-21
+
+Use blow command to run the tests:
+./gradlew test --tests com.example.chain.IntegrationTestE2EListenerToDB.testKafkaMessageFlow2 --info

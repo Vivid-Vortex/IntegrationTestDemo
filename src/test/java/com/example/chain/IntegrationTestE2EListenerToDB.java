@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.kafka.support.SendResult;
@@ -53,7 +52,7 @@ class IntegrationTestE2EListenerToDB {
     private KafkaConsumer<String, String> consumer;
 
     @Test
-    void testKafkaMessageFlow2() throws Exception {
+    void testListenerToDbE2EFlow() throws Exception {
         // Step 1: Send message to Kafka
         String testMessageContent = "Hello, Kafka!";
         Message testMessage = new Message();

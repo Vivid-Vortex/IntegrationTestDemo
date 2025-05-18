@@ -1,9 +1,9 @@
 package com.example.chain.handler;
 
 import com.example.chain.model.Message;
-import org.springframework.stereotype.Component;
+// import org.springframework.stereotype.Component;
 
-@Component
+// @Component
 public class ValidationHandler extends AbstractHandler {
     @Override
     public void handle(Message message) {

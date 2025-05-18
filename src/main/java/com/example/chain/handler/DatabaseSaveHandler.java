@@ -2,9 +2,9 @@ package com.example.chain.handler;
 
 import com.example.chain.model.Message;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Component;
+// import org.springframework.stereotype.Component;
 
-@Component
+// @Component
 public class DatabaseSaveHandler extends AbstractHandler {
     private final JpaRepository<Message, Long> messageRepository;
 
