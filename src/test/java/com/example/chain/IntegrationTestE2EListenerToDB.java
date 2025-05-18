@@ -7,6 +7,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,12 @@ class IntegrationTestE2EListenerToDB {
         registry.add("spring.kafka.consumer.value-deserializer", () -> kafkaProps.getProperty("value.deserializer"));
     }
 
+    @BeforeEach
+    public void setUp() {
+        messageJsonStream = getClass().getClassLoader().getResourceAsStream("message.json");
+        headersJsonStream = getClass().getClassLoader().getResourceAsStream("headers.json");
+    }
+
     @Test
     void testListenerToDbE2EFlow() throws Exception {
         // Step 1: Prepare the Sample message to send. you can read json file to create the sample payload.
@@ -99,18 +106,41 @@ class IntegrationTestE2EListenerToDB {
 
     @Test
     void testListenerToDbE2EFlowWithJsonFiles() throws Exception {
-        // Step 1: Open InputStreams for message.json and headers.json
-        messageJsonStream = getClass().getClassLoader().getResourceAsStream("message.json");
-        headersJsonStream = getClass().getClassLoader().getResourceAsStream("headers.json");
+        // Step 1: Read the message payload from message.json
+        Message testMessage = readMessageFromJson(messageJsonStream, Message.class);
+        logger.info("Sending message from JSON: {}", testMessage.getContent());
 
-        // Step 2: Read message from message.json
+        // Step 2: Read the headers from headers.json
+        List<RecordHeader> headers = readHeadersFromJson();
+
+        // Step 3: Create a ProducerRecord with the payload and headers
+        ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, List.copyOf(headers));
+
+        // Step 4: Send the message to Kafka
+        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(messageProducerRecord);
+        SendResult<String, Message> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
+        logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
+
+        // Step 5: Wait for the message to be consumed and processed
+        Thread.sleep(6000);
+
+        // Step 6: Fetch the message from the H2 database using the repository
+        Message savedMessage = messageRepository.findByContent(testMessage.getContent());
+
+        // Step 7: Verify the message was inserted into the H2 database
+        assertNotNull(savedMessage, "Message should be saved in the database");
+        assertEquals(testMessage.getContent(), savedMessage.getContent(), "The saved message content should match the sent message");
+    }
+
+    private <T> T readMessageFromJson(InputStream jsonStream, Class<T> clazz) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        Message testMessage = objectMapper.readValue(messageJsonStream, Message.class);
+        return objectMapper.readValue(jsonStream, clazz);
+    }
 
-        // Step 3: Read headers from headers.json
-        List<RecordHeader> headers;
+    private List<RecordHeader> readHeadersFromJson() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
         List<?> headerList = objectMapper.readValue(headersJsonStream, List.class);
-        headers = ((List<?>) headerList).stream()
+        return ((List<?>) headerList).stream()
             .map(obj -> {
                 var map = (java.util.Map<?,?>) obj;
                 String key = (String) map.get("key");
@@ -118,16 +148,6 @@ class IntegrationTestE2EListenerToDB {
                 return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
             })
             .toList();
-
-        logger.info("Sending message from JSON: {}", testMessage.getContent());
-        ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, List.copyOf(headers));
-        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(messageProducerRecord);
-        SendResult<String, Message> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
-        logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
-        Thread.sleep(6000);
-        Message savedMessage = messageRepository.findByContent(testMessage.getContent());
-        assertNotNull(savedMessage, "Message should be saved in the database");
-        assertEquals(testMessage.getContent(), savedMessage.getContent(), "The saved message content should match the sent message");
     }
 
     private static List<Header> getHeaders() {
