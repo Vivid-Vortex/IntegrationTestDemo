@@ -17,6 +17,9 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 import java.util.Properties;
@@ -90,6 +93,40 @@ class IntegrationTestE2EListenerToDB {
         // Step 8: Verify or Assert the message was inserted into the H2 database
         assertNotNull(savedMessage, "Message should be saved in the database");
         assertEquals(testMessageContent, savedMessage.getContent(), "The saved message content should match the sent message");
+    }
+
+    @Test
+    void testListenerToDbE2EFlowWithJsonFiles() throws Exception {
+        // Step 1: Read message from message.json
+        ObjectMapper objectMapper = new ObjectMapper();
+        Message testMessage;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("message.json")) {
+            testMessage = objectMapper.readValue(is, Message.class);
+        }
+
+        // Step 2: Read headers from headers.json
+        List<RecordHeader> headers;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("headers.json")) {
+            List<?> headerList = objectMapper.readValue(is, List.class);
+            headers = ((List<?>) headerList).stream()
+                .map(obj -> {
+                    var map = (java.util.Map<?,?>) obj;
+                    String key = (String) map.get("key");
+                    String value = (String) map.get("value");
+                    return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
+                })
+                .toList();
+        }
+
+        logger.info("Sending message from JSON: {}", testMessage.getContent());
+        ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, List.copyOf(headers));
+        CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(messageProducerRecord);
+        SendResult<String, Message> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
+        logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
+        Thread.sleep(6000);
+        Message savedMessage = messageRepository.findByContent(testMessage.getContent());
+        assertNotNull(savedMessage, "Message should be saved in the database");
+        assertEquals(testMessage.getContent(), savedMessage.getContent(), "The saved message content should match the sent message");
     }
 
     private static List<Header> getHeaders() {
