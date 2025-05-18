@@ -19,7 +19,8 @@ import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.InputStream;
+import java.io.File;
+import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
 
 import java.util.List;
@@ -43,8 +44,6 @@ class IntegrationTestE2EListenerToDB {
     private MessageRepository messageRepository; // Inject the repository here
 
     private KafkaConsumer<String, String> consumer;
-    private InputStream messageJsonStream;
-    private InputStream headersJsonStream;
 
     /**
      * DynamicPropertySource: Dynamically registers properties for the Spring context during test execution.
@@ -64,12 +63,6 @@ class IntegrationTestE2EListenerToDB {
         registry.add("spring.kafka.consumer.auto-offset-reset", () -> kafkaProps.getProperty("auto.offset.reset"));
         registry.add("spring.kafka.consumer.key-deserializer", () -> kafkaProps.getProperty("key.deserializer"));
         registry.add("spring.kafka.consumer.value-deserializer", () -> kafkaProps.getProperty("value.deserializer"));
-    }
-
-    @BeforeEach
-    public void setUp() {
-        messageJsonStream = getClass().getClassLoader().getResourceAsStream("message.json");
-        headersJsonStream = getClass().getClassLoader().getResourceAsStream("headers.json");
     }
 
     @Test
@@ -107,17 +100,18 @@ class IntegrationTestE2EListenerToDB {
     @Test
     void testListenerToDbE2EFlowWithJsonFiles() throws Exception {
         // Step 1: Read the message payload from message.json
-        Message testMessage = readMessageFromJson(messageJsonStream, Message.class);
+        Message testMessage = readMessageFromJson("src/test/resources/message.json", Message.class);
         logger.info("Sending message from JSON: {}", testMessage.getContent());
 
         // Step 2: Read the headers from headers.json
-        List<RecordHeader> headers = readHeadersFromJson();
+        List<RecordHeader> headers = readHeadersFromJson("src/test/resources/headers.json");
 
         // Step 3: Create a ProducerRecord with the payload and headers
         ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, List.copyOf(headers));
 
         // Step 4: Send the message to Kafka
         CompletableFuture<SendResult<String, Message>> future = kafkaTemplate.send(messageProducerRecord);
+        /* Here, the future.get() method is called on the CompletableFuture object (future) to block the current thread until the Kafka send operation completes or the specified timeout (10 seconds) elapses. The get() method takes two arguments: the timeout value (10) and the time unit (TimeUnit.SECONDS). If the operation completes successfully within the timeout, it returns a SendResult object. If the timeout is exceeded or an exception occurs during the send operation, the method will throw an exception.*/
         SendResult<String, Message> result = future.get(10, java.util.concurrent.TimeUnit.SECONDS);
         logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
 
@@ -132,22 +126,26 @@ class IntegrationTestE2EListenerToDB {
         assertEquals(testMessage.getContent(), savedMessage.getContent(), "The saved message content should match the sent message");
     }
 
-    private <T> T readMessageFromJson(InputStream jsonStream, Class<T> clazz) throws Exception {
+    private <T> T readMessageFromJson(String filePath, Class<T> clazz) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(jsonStream, clazz);
+        try (FileReader reader = new FileReader(new File(filePath))) {
+            return objectMapper.readValue(reader, clazz);
+        }
     }
 
-    private List<RecordHeader> readHeadersFromJson() throws Exception {
+    private List<RecordHeader> readHeadersFromJson(String filePath) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<?> headerList = objectMapper.readValue(headersJsonStream, List.class);
-        return ((List<?>) headerList).stream()
-            .map(obj -> {
-                var map = (java.util.Map<?,?>) obj;
-                String key = (String) map.get("key");
-                String value = (String) map.get("value");
-                return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
-            })
-            .toList();
+        try (FileReader reader = new FileReader(new File(filePath))) {
+            List<?> headerList = objectMapper.readValue(reader, List.class);
+            return headerList.stream()
+                .map(obj -> {
+                    var map = (java.util.Map<?,?>) obj;
+                    String key = (String) map.get("key");
+                    String value = (String) map.get("value");
+                    return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
+                })
+                .toList();
+        }
     }
 
     private static List<Header> getHeaders() {
@@ -191,12 +189,6 @@ class IntegrationTestE2EListenerToDB {
         if (consumer != null) {
             consumer.close();
             logger.info("KafkaConsumer closed successfully.");
-        }
-        try {
-            if (messageJsonStream != null) messageJsonStream.close();
-            if (headersJsonStream != null) headersJsonStream.close();
-        } catch (Exception e) {
-            logger.warn("Error closing JSON InputStreams", e);
         }
     }
 } 
