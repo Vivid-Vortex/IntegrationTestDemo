@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 // Use Below kafkaProperties Method instead of @TestPropertySource annotation as used in ITIngestAndReadFromEmbededKafka
 class IntegrationTestE2EListenerToDB {
     private static final Logger logger = LoggerFactory.getLogger(IntegrationTestE2EListenerToDB.class);
+    public static final String SRC_TEST_RESOURCES_MESSAGE_JSON = "src/test/resources/message.json";
+    public static final String SRC_TEST_RESOURCES_HEADERS_JSON = "src/test/resources/headers.json";
     @Autowired
     private KafkaTemplate<String, Message> kafkaTemplate;
 
@@ -100,11 +102,11 @@ class IntegrationTestE2EListenerToDB {
     @Test
     void testListenerToDbE2EFlowWithJsonFiles() throws Exception {
         // Step 1: Read the message payload from message.json
-        Message testMessage = readMessageFromJson("src/test/resources/message.json", Message.class);
+        Message testMessage = readMessageFromJson(SRC_TEST_RESOURCES_MESSAGE_JSON, Message.class);
         logger.info("Sending message from JSON: {}", testMessage.getContent());
 
         // Step 2: Read the headers from headers.json
-        List<RecordHeader> headers = readHeadersFromJson("src/test/resources/headers.json");
+        List<RecordHeader> headers = readHeadersFromJson(SRC_TEST_RESOURCES_HEADERS_JSON);
 
         // Step 3: Create a ProducerRecord with the payload and headers
         ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, List.copyOf(headers));
