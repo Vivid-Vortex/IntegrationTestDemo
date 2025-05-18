@@ -1,5 +1,12 @@
 # IntegrationTestDemo
 
+---
+
+**Tags:**
+`spring-boot` `kafka` `java` `jpa` `h2` `integration-test` `embedded-kafka` `handler-chain` `e2e` `microservices`
+
+---
+
 A Spring Boot application demonstrating an end-to-end message flow using Kafka, a handler chain pattern, and persistence with JPA/H2. The project includes comprehensive integration tests with embedded Kafka.
 
 ---
