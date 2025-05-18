@@ -34,8 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
     "spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer",
     "spring.kafka.consumer.value-deserializer=org.apache.kafka.common.serialization.StringDeserializer"
 })
-class KafkaIntegrationTest {
-    private static final Logger logger = LoggerFactory.getLogger(KafkaIntegrationTest.class);
+class ITIngestAndReadFromEmbededKafka {
+    private static final Logger logger = LoggerFactory.getLogger(IntegrationTestE2EListenerToDB.class);
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
