@@ -62,10 +62,10 @@ class IntegrationTestE2EListenerToDB {
 
     @Test
     void testListenerToDbE2EFlow() throws Exception {
-        // Step 1: Prepare the Sample message to send. you can read json file to to the sample payload.
+        // Step 1: Prepare the Sample message to send. you can read json file to create the sample payload.
         String testMessageContent = "Hello, Kafka!";
 
-        // Step 2: Use the json data, prepare the message payload
+        // Step 2: Using the above json data, prepare the message payload
         Message testMessage = preparePayloadBody(testMessageContent);
         logger.info("Sending message: {}", testMessageContent);
 
@@ -81,11 +81,13 @@ class IntegrationTestE2EListenerToDB {
         logger.info("Message sent successfully to partition: {}", result.getRecordMetadata().partition());
 
         // Step 6: Wait for the message to be consumed and processed. Allow some time for the listener to process the message.
-        // Please note that you must adjust this as you might observe that sometime that sometimes after trying two or three time this tests passs.
+        // Please note that you must adjust this as you might observe that sometime after trying two or three time this tests passes.
         Thread.sleep(6000);
 
-        // Step 7: Verify the message was inserted into the H2 database
+        // Step 7: Fetch the message from the H2 database using the repository
         Message savedMessage = messageRepository.findByContent(testMessageContent);
+
+        // Step 8: Verify or Assert the message was inserted into the H2 database
         assertNotNull(savedMessage, "Message should be saved in the database");
         assertEquals(testMessageContent, savedMessage.getContent(), "The saved message content should match the sent message");
     }
