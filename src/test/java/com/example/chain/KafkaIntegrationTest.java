@@ -1,6 +1,5 @@
 package com.example.chain;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.junit.jupiter.api.AfterEach;
@@ -56,7 +55,7 @@ class KafkaIntegrationTest {
         final Properties consumerProps = getKafkaConfigsProps();
 
         /* @see https://github.com/Vivid-Vortex/IntegrationTestDemo/blob/master/src/test/java/com/example/chain/README.md#consumerrecords---key-and-valu */
-        final ConsumerRecords<String, String> records = consumerMessages(consumerProps);
+        final ConsumerRecords<String, String> records = consumeMessages(consumerProps);
         assertFalse(records.isEmpty(), "No messages were consumed");
 
         String receivedMessage = records.iterator().next().value();
@@ -66,7 +65,7 @@ class KafkaIntegrationTest {
         assertEquals(testMessage, receivedMessage, "The received message should match the sent message");
     }
 
-    private ConsumerRecords<String, String> consumerMessages(Properties consumerProps) {
+    private ConsumerRecords<String, String> consumeMessages(Properties consumerProps) {
         consumer = new KafkaConsumer<>(consumerProps);
         consumer.subscribe(List.of("test-topic"));
         return consumer.poll(Duration.ofSeconds(10));
