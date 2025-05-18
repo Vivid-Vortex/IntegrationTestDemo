@@ -42,6 +42,8 @@ class IntegrationTestE2EListenerToDB {
     private MessageRepository messageRepository; // Inject the repository here
 
     private KafkaConsumer<String, String> consumer;
+    private InputStream messageJsonStream;
+    private InputStream headersJsonStream;
 
     /**
      * DynamicPropertySource: Dynamically registers properties for the Spring context during test execution.
@@ -97,26 +99,25 @@ class IntegrationTestE2EListenerToDB {
 
     @Test
     void testListenerToDbE2EFlowWithJsonFiles() throws Exception {
-        // Step 1: Read message from message.json
-        ObjectMapper objectMapper = new ObjectMapper();
-        Message testMessage;
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("message.json")) {
-            testMessage = objectMapper.readValue(is, Message.class);
-        }
+        // Step 1: Open InputStreams for message.json and headers.json
+        messageJsonStream = getClass().getClassLoader().getResourceAsStream("message.json");
+        headersJsonStream = getClass().getClassLoader().getResourceAsStream("headers.json");
 
-        // Step 2: Read headers from headers.json
+        // Step 2: Read message from message.json
+        ObjectMapper objectMapper = new ObjectMapper();
+        Message testMessage = objectMapper.readValue(messageJsonStream, Message.class);
+
+        // Step 3: Read headers from headers.json
         List<RecordHeader> headers;
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("headers.json")) {
-            List<?> headerList = objectMapper.readValue(is, List.class);
-            headers = ((List<?>) headerList).stream()
-                .map(obj -> {
-                    var map = (java.util.Map<?,?>) obj;
-                    String key = (String) map.get("key");
-                    String value = (String) map.get("value");
-                    return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
-                })
-                .toList();
-        }
+        List<?> headerList = objectMapper.readValue(headersJsonStream, List.class);
+        headers = ((List<?>) headerList).stream()
+            .map(obj -> {
+                var map = (java.util.Map<?,?>) obj;
+                String key = (String) map.get("key");
+                String value = (String) map.get("value");
+                return new RecordHeader(key, value.getBytes(StandardCharsets.UTF_8));
+            })
+            .toList();
 
         logger.info("Sending message from JSON: {}", testMessage.getContent());
         ProducerRecord<String, Message> messageProducerRecord = buildProducerRecord(testMessage, List.copyOf(headers));
@@ -170,6 +171,12 @@ class IntegrationTestE2EListenerToDB {
         if (consumer != null) {
             consumer.close();
             logger.info("KafkaConsumer closed successfully.");
+        }
+        try {
+            if (messageJsonStream != null) messageJsonStream.close();
+            if (headersJsonStream != null) headersJsonStream.close();
+        } catch (Exception e) {
+            logger.warn("Error closing JSON InputStreams", e);
         }
     }
 } 
