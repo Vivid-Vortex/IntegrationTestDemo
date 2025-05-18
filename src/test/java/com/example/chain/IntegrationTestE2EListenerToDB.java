@@ -49,8 +49,9 @@ class IntegrationTestE2EListenerToDB {
     static void kafkaProperties(DynamicPropertyRegistry registry) {
         Properties kafkaProps = getKafkaConfigsProps();
         registry.add("spring.kafka.producer.bootstrap-servers", () -> kafkaProps.getProperty("bootstrap.servers"));
-        registry.add("embedded.kafka.topics", () -> kafkaProps.getProperty("embedded.kafka.topics"));
-        registry.add("embedded.kafka.partitions", () -> kafkaProps.getProperty("embedded.kafka.partitions"));
+        // Setting below two properties is not required as we are setting these directly in buildProducerRecord -> ProducerRecord arguments
+//        registry.add("embedded.kafka.topics", () -> kafkaProps.getProperty("embedded.kafka.topics"));
+//        registry.add("embedded.kafka.partitions", () -> kafkaProps.getProperty("embedded.kafka.partitions"));
         registry.add("spring.kafka.producer.key-serializer", () -> kafkaProps.getProperty("key.serializer"));
         registry.add("spring.kafka.producer.value-serializer", () -> kafkaProps.getProperty("value.serializer"));
         registry.add("spring.kafka.consumer.group-id", () -> kafkaProps.getProperty("group.id"));
